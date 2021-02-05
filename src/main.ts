@@ -1,8 +1,27 @@
 import { NestFactory } from '@nestjs/core';
+import {
+  ExpressAdapter,
+  NestExpressApplication,
+} from '@nestjs/platform-express';
+import * as express from 'express';
 import { AppModule } from './app.module';
+import { HttpsFunction, https } from 'firebase-functions';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  await app.listen(3000);
+const server = express();
+
+async function bootstrap(expressInstance) {
+  const adapter = new ExpressAdapter(expressInstance);
+  const app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    adapter,
+    {},
+  );
+  app.enableCors();
+  return app.init();
 }
-bootstrap();
+
+bootstrap(server)
+  .then(() => console.log('Nest Ready'))
+  .catch((err) => console.error('Nest broken', err));
+
+export const api: HttpsFunction = https.onRequest(server);
